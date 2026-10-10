@@ -208,31 +208,67 @@ function bindTop() {
   }
 }
 
+function lget(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+function lset(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+function applyLeaves(list) {
+  S.picks = {}; S.others = {}; S.allLeaves = list;
+  list.forEach(function (x) {
+    if (x.name === S.me.name) S.picks[x.date] = x.type;
+    else (S.others[x.date] = S.others[x.date] || []).push(x);
+  });
+  S.saved = JSON.parse(JSON.stringify(S.picks)); S.dirty = false;
+}
+function rerender() { var y = window.scrollY; renderStaff(); window.scrollTo(0, y); }
+function useBoot(b) {
+  S.data = b.init;
+  var saved = store('pmName');
+  S.me = b.init.people.filter(function (p) { return p.name === (S.me ? S.me.name : saved); })[0] || b.init.people[0];
+  if (!S.me) { app(topBar() + '<div class="wrap"><div class="card">人員表是空的，請先在試算表「人員」填名字。</div></div>'); bindTop(); return false; }
+  if (!b.init.cycles.length) { app(topBar() + '<div class="wrap"><div class="card">目前沒有可填寫的期別。</div></div>'); bindTop(); return false; }
+  S.cycle = b.init.cycles.filter(function (x) { return x.start === b.start; })[0] || b.init.cycles[0];
+  applyLeaves(b.leaves);
+  return true;
+}
+function prefetchRoster(start) {
+  call('apiCycleRoster', start).then(function (d) { lset('pbRo|' + start, d); }).catch(function () {});
+}
+
 function staffStart(cycleStart) {
-  app('<div class="loading">載入中…</div>');
-  call('apiInit').then(function (data) {
-    S.data = data;
-    var saved = store('pmName');
-    S.me = data.people.filter(function (p) { return p.name === (S.me ? S.me.name : saved); })[0] || data.people[0];
-    if (!S.me) { app(topBar() + '<div class="wrap"><div class="card">人員表是空的，請先在試算表「人員」填名字。</div></div>'); bindTop(); return; }
-    staffCal(cycleStart);
-  }).catch(function (e) { app('<div class="wrap"><div class="card">讀取失敗：' + esc(e.message) + '</div></div>'); });
+  var cached = lget('pbBoot');
+  if (cached && (!cycleStart || cached.start === cycleStart)) { if (useBoot(cached)) renderStaff(); }
+  else { cached = null; app('<div class="loading">載入中…</div>'); }
+  var boot = call('apiBoot', cycleStart || '').catch(function () {
+    return call('apiInit').then(function (init) {
+      var c = init.cycles.filter(function (x) { return x.start === cycleStart; })[0] || init.cycles.filter(function (x) { return !x.locked; })[0] || init.cycles[0];
+      return call('apiCycleLeaves', c.start).then(function (lv) { return { init: init, start: c.start, leaves: lv }; });
+    });
+  });
+  boot.then(function (b) {
+    lset('pbBoot', b); lset('pbLv|' + b.start, b.leaves);
+    if (!cached) { if (useBoot(b)) renderStaff(); }
+    else if (!same(b, cached) && !S.dirty && S.cycle && S.cycle.start === b.start) { if (useBoot(b)) rerender(); }
+    else if (!same(b.init, cached.init)) { S.data = b.init; }
+    prefetchRoster(b.start);
+  }).catch(function (e) {
+    if (!cached) app('<div class="wrap"><div class="card">讀取失敗：' + esc(e.message) + '<br><br><button onclick="staffStart()">再試一次</button></div></div>');
+    else toast('連線較慢，目前顯示的是上次的資料', true);
+  });
 }
 
 function staffCal(cycleStart) {
   var cs = S.data.cycles;
   if (!cs.length) { app(topBar() + '<div class="wrap"><div class="card">目前沒有可填寫的期別。</div></div>'); bindTop(); return; }
   var c = cs.filter(function (x) { return x.start === cycleStart; })[0] || cs.filter(function (x) { return !x.locked; })[0] || cs[0];
+  var sameCycle = S.cycle && S.cycle.start === c.start && S.allLeaves;
   S.cycle = c;
+  var have = sameCycle ? S.allLeaves : lget('pbLv|' + c.start);
+  if (have) { applyLeaves(have); renderStaff(); }
   call('apiCycleLeaves', c.start).then(function (list) {
-    S.picks = {}; S.others = {}; S.allLeaves = list;
-    list.forEach(function (x) {
-      if (x.name === S.me.name) S.picks[x.date] = x.type;
-      else (S.others[x.date] = S.others[x.date] || []).push(x);
-    });
-    S.saved = JSON.parse(JSON.stringify(S.picks)); S.dirty = false;
-    renderStaff();
-  }).catch(function (e) { toast(e.message, true); });
+    lset('pbLv|' + c.start, list);
+    if (S.cycle.start !== c.start || S.dirty) return;
+    if (!have || !same(list, have)) { applyLeaves(list); rerender(); }
+  }).catch(function (e) { if (!have) toast(e.message, true); });
 }
 
 function canEdit() { return !S.cycle.locked || !!S.pw; }
@@ -331,14 +367,14 @@ function bindCommon() {
   Array.prototype.forEach.call(document.querySelectorAll('.adminbar .seg button'), function (b) {
     b.onclick = function () {
       var m = b.getAttribute('data-m'); if (m === c.mode) return;
-      call('apiAdminSetLock', S.pw, c.start, m).then(function () { toast('已改為「' + m + '」'); staffStart(c.start); }).catch(function (e) { toast(e.message, true); });
+      call('apiAdminSetLock', S.pw, c.start, m).then(function () { try { localStorage.removeItem('pbBoot'); } catch (e) {} toast('已改為「' + m + '」'); staffStart(c.start); }).catch(function (e) { toast(e.message, true); });
     };
   });
   if ($('gen')) $('gen').onclick = function () {
     if (S.dirty && !confirm('休假還沒儲存，排班會用「已儲存」的資料。要繼續嗎？')) return;
     $('gen').disabled = true; $('gen').textContent = '排班中…';
     call('apiAdminGenerate', S.pw, c.start).then(function (nd) {
-      S.rosterCache[c.start] = nd; S.view = 'roster';
+      S.rosterCache[c.start] = nd; S.view = 'roster'; try { localStorage.removeItem('pbRo|' + c.start); localStorage.removeItem('pbBoot'); } catch (e) {}
       S.data.cycles.forEach(function (x) { if (x.start === nd.cycle.start) x.lastRun = nd.cycle.lastRun; });
       S.cycle = nd.cycle; toast('班表產生好了'); renderStaff();
     }).catch(function (e) { toast(e.message, true); $('gen').disabled = false; $('gen').textContent = '產生班表'; });
@@ -355,9 +391,13 @@ function loadRoster() {
     $('rosterBox').innerHTML = h;
   };
   if (S.rosterCache[c.start]) { show(S.rosterCache[c.start]); return; }
+  var local = S.pw ? null : lget('pbRo|' + c.start);
+  if (local) show(local);
   var p = S.pw ? call('apiAdminCycle', S.pw, c.start) : call('apiCycleRoster', c.start);
-  p.then(function (d) { S.rosterCache[c.start] = d; if (S.view === 'roster' && S.cycle.start === c.start) show(d); })
-    .catch(function (e) { $('rosterBox').innerHTML = '<div class="card">讀取失敗：' + esc(e.message) + '</div>'; });
+  p.then(function (d) {
+    S.rosterCache[c.start] = d; if (!S.pw) lset('pbRo|' + c.start, d);
+    if (S.view === 'roster' && S.cycle.start === c.start && (!local || !same(d, local))) show(d);
+  }).catch(function (e) { if (!local) $('rosterBox').innerHTML = '<div class="card">讀取失敗：' + esc(e.message) + '</div>'; });
 }
 
 function switchPerson(p) {
@@ -400,7 +440,8 @@ function staffSave() {
   $('save').disabled = true; $('save').textContent = '儲存中…';
   (S.pw ? call('apiAdminSavePerson', S.pw, S.me.name, S.cycle.start, list) : call('apiSaveMyLeaves', S.me.name, S.cycle.start, list)).then(function () {
     delete S.rosterCache[S.cycle.start];
-    S.allLeaves = S.allLeaves.filter(function (x) { return x.name !== S.me.name; }).concat(list.map(function (x) { return { date: x.date, name: S.me.name, type: x.type }; }));
+    S.allLeaves = S.allLeaves.filter(function (x) { return x.name !== S.me.name; }).concat(list.map(function (x) { return { date: x.date, name: S.me.name, store: S.me.store, type: x.type }; }));
+    lset('pbLv|' + S.cycle.start, S.allLeaves); localStorage.removeItem && (function () { try { localStorage.removeItem('pbRo|' + S.cycle.start); } catch (e) {} })();
     S.saved = JSON.parse(JSON.stringify(S.picks)); S.dirty = false; toast('已儲存'); renderStaff();
   }).catch(function (e) { toast(e.message, true); $('save').disabled = false; $('save').textContent = '儲存'; });
 }
