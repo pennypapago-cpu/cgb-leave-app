@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E56">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="長庚排休">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<title>長庚生技排休</title>
+<style>
+  :root {
+    --brand: #0F6E56; --brand-ink: #085041; --brand-soft: #E1F5EE;
+    --bg: #f3f6f4; --card: #ffffff; --ink: #3a2e22; --muted: #8a7b6a; --line: #e6dccb;
+    --accent: var(--brand); --accent-ink: var(--brand-ink); --accent-soft: var(--brand-soft);
+    --off: #eceae6; --hol: #fde3df; --hol-ink: #b0443a;
+    --t1: #5b84b1; --t2: #4f9467; --t3: #cf7f2e;
+    --s-mai: #7b6cc4; --s-xin: #2e9a8f; --s-dou: #c46a8a; --s-jia: #5b84b1;
+    --ok: #3d8b55; --warn: #c27c12; --err: #c0443a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+  body { padding: 0 0 96px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+  .wide { max-width: 1180px; }
+  header { padding: 20px 0 8px; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: .5px; }
+  h1 small { display: block; font-size: 13px; color: var(--muted); font-weight: 500; margin-top: 4px; letter-spacing: 0; }
+  h2 { font-size: 16px; margin: 0 0 10px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin: 12px 0; }
+  .muted { color: var(--muted); font-size: 13px; }
+  button { font: inherit; cursor: pointer; border: 1px solid var(--line); background: #fff; color: var(--ink);
+    border-radius: 10px; padding: 10px 14px; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+  button.primary:disabled { opacity: .5; cursor: default; }
+  button.link { border: 0; background: none; color: var(--muted); text-decoration: underline; padding: 6px; }
+  .names { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .names button { text-align: left; padding: 14px; font-size: 16px; font-weight: 600; }
+  .names button span { display: block; font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+  .tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+  .tabs button { white-space: nowrap; font-size: 14px; padding: 8px 12px; }
+  .tabs button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+  .status { margin: 10px 0 0; font-size: 14px; padding: 10px 12px; border-radius: 10px; }
+  .status.open { background: #eaf4ec; color: #2d6b40; }
+  .status.closed { background: #fbe9e6; color: #9a3329; }
+  .picker { display: flex; gap: 8px; margin: 4px 0 12px; }
+  .picker button { flex: 1; font-weight: 700; padding: 10px 6px; }
+  .picker button .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+  .picker button.on { color: #fff; }
+  .picker button.on[data-t="休"] { background: var(--t1); border-color: var(--t1); }
+  .picker button.on[data-t="特休"] { background: var(--t2); border-color: var(--t2); }
+  .picker button.on[data-t="換休"] { background: var(--t3); border-color: var(--t3); }
+  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .cal .wd { text-align: center; font-size: 12px; color: var(--muted); padding: 2px 0; }
+  .day { position: relative; min-height: 58px; border-radius: 10px; border: 1px solid var(--line); background: #fff;
+    padding: 6px 4px 4px; text-align: center; user-select: none; -webkit-tap-highlight-color: transparent; }
+  .day .n { font-size: 15px; font-weight: 700; }
+  .day .m { font-size: 10px; color: var(--muted); display: block; height: 12px; }
+  .day .h { font-size: 10px; color: var(--hol-ink); display: block; line-height: 1.2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .day .tag { display: inline-block; white-space: nowrap; margin-top: 3px; font-size: 11px; font-weight: 700; color: #fff; border-radius: 6px; padding: 1px 6px; }
+  .day.click { cursor: pointer; }
+  .who-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+  .who-btn { padding: 8px 14px; font-size: 15px; font-weight: 600; border-radius: 999px; }
+  .who-btn.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .day .oth { display: block; margin-top: 3px; line-height: 1; }
+  .day .oth i { font-style: normal; display: inline-block; font-size: 10px; color: #7a6440; background: #f0e6d2; border-radius: 4px; padding: 1px 3px; margin: 1px; }
+  .day.busy:not(.off) { box-shadow: inset 0 -3px 0 #e2cfa6; }
+  .day.click:active { transform: scale(.97); }
+  .day.off { background: var(--off); color: #a9a39a; border-color: transparent; }
+  .day.hol:not(.off) { background: var(--hol); }
+  .day.sel-休 { border: 2px solid var(--t1); }
+  .day.sel-特休 { border: 2px solid var(--t2); }
+  .day.sel-換休 { border: 2px solid var(--t3); }
+  .tag.休 { background: var(--t1); } .tag.特休 { background: var(--t2); } .tag.換休 { background: var(--t3); }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; padding-bottom: env(safe-area-inset-bottom); background: rgba(255,255,255,.96); border-top: 1px solid var(--line);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); backdrop-filter: blur(6px); }
+  .bar .wrap { display: flex; align-items: center; gap: 12px; padding: 0; }
+  .bar .sum { flex: 1; font-size: 14px; }
+  .bar .sum b { font-size: 16px; }
+  .toast { position: fixed; z-index: 50; left: 50%; top: 64px; transform: translateX(-50%); background: var(--ink); color: #fff;
+    padding: 10px 16px; border-radius: 10px; font-size: 14px; z-index: 9; box-shadow: 0 4px 16px rgba(0,0,0,.2); }
+  .toast.err { background: var(--err); }
+  .loading { text-align: center; padding: 48px 0; color: var(--muted); }
+  input[type=password] { font: inherit; width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 10px; margin: 8px 0 12px; }
+  select { font: inherit; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; padding: 8px 14px; border-right: 1px solid var(--line); }
+  .seg button:last-child { border-right: 0; }
+  .seg button.on { background: var(--accent-soft); color: var(--accent-ink); font-weight: 700; }
+  .grid-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+  table.grid { border-collapse: separate; border-spacing: 0; font-size: 12px; }
+  table.grid th, table.grid td { border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); padding: 4px; text-align: center; min-width: 38px; height: 34px; }
+  table.grid th { background: #fbf7ef; position: sticky; top: 0; font-weight: 600; }
+  table.grid th.who, table.grid td.who { position: sticky; left: 0; background: #fff; text-align: left; min-width: 96px; z-index: 1; font-weight: 600; padding: 4px 8px; }
+  table.grid th.who { z-index: 2; background: #fbf7ef; }
+  table.grid td.c { cursor: pointer; }
+  table.grid td.off { background: var(--off); cursor: default; }
+  table.grid td.hol { background: var(--hol); }
+  table.grid td.mon, table.grid th.mon { border-left: 2px solid #b9ab94; }
+  .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 6px; }
+  .shift { border-radius: 10px; border: 1px solid var(--line); background: #fff; padding: 6px 4px; text-align: center; min-height: 74px; font-size: 12px; }
+  .shift .d { font-size: 11px; color: var(--muted); }
+  .shift .code { font-size: 15px; font-weight: 800; margin-top: 2px; }
+  .shift .st { font-size: 12px; font-weight: 700; margin-top: 2px; }
+  .shift .pair { display: inline-block; font-size: 10px; border: 1px solid currentColor; border-radius: 4px; padding: 0 3px; margin-left: 2px; }
+  .shift.off { background: var(--off); color: #9a948b; }
+  .shift.tv { background: #eaf4ec; }
+  .shift.pend { background: #fff5d6; border-color: #e9c46a; }
+  .shift.blk { border: 0; color: #fff; }
+  .shift.blk .d { color: rgba(255,255,255,.85); }
+  .shift.blk .big { font-size: 14px; font-weight: 800; margin-top: 6px; white-space: nowrap; }
+  .shift.blk .sm { font-size: 11px; font-weight: 700; margin-top: 2px; opacity: .9; }
+  .shift.blk.麥寮 { background: #6a5acd; } .shift.blk.新港 { background: #1f8f84; } .shift.blk.斗六 { background: #c4527a; } .shift.blk.嘉義 { background: #3d74b8; }
+  .shift.blk.pairc { color: var(--ink); } .shift.blk.pairc .d { color: var(--muted); }
+  .shift.blk.pairc.麥寮 { background: #e3defa; box-shadow: inset 0 0 0 2px #6a5acd; } .shift.blk.pairc.新港 { background: #d5f0ec; box-shadow: inset 0 0 0 2px #1f8f84; }
+  .shift.blk.pairc.斗六 { background: #f8dde7; box-shadow: inset 0 0 0 2px #c4527a; } .shift.blk.pairc.嘉義 { background: #dbe7f6; box-shadow: inset 0 0 0 2px #3d74b8; }
+  .sw { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -2px; margin-right: 4px; }
+  .st.麥寮 { color: var(--s-mai); } .st.新港 { color: var(--s-xin); } .st.斗六 { color: var(--s-dou); } .st.嘉義 { color: var(--s-jia); }
+  table.stats { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.stats th, table.stats td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: right; }
+  table.stats th:first-child, table.stats td:first-child { text-align: left; }
+  table.stats tr.total td { font-weight: 700; }
+  .bad { color: var(--err); font-weight: 700; }
+  .issues { list-style: none; padding: 0; margin: 0; font-size: 14px; }
+  .issues li { padding: 8px 0; border-bottom: 1px solid var(--line); display: flex; gap: 10px; }
+  .lv { flex: none; font-size: 12px; font-weight: 700; border-radius: 6px; padding: 2px 6px; height: fit-content; }
+  .lv.錯誤, .lv.衝突 { background: #fbe1dd; color: var(--err); }
+  .lv.待定 { background: #fff1c9; color: #8a5a00; }
+  .lv.注意, .lv.提醒 { background: #eef0f3; color: #5b6573; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; }
+  .topbar { position: sticky; top: 0; z-index: 20; background: var(--brand); color: #fff; padding-top: env(safe-area-inset-top); }
+  .topbar .wrap { display: flex; align-items: center; justify-content: space-between; height: 52px; }
+  .topbar b { font-size: 17px; letter-spacing: .5px; }
+  .topbar button { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.6); padding: 6px 12px; font-size: 14px; }
+  .topbar button.on { background: #fff; color: var(--brand-ink); border-color: #fff; font-weight: 700; }
+  .adminbar { background: var(--brand-soft); border: 1px solid var(--brand); border-radius: 14px; padding: 12px 14px; margin: 12px 0; color: var(--brand-ink); }
+  .viewsw { display: flex; gap: 8px; margin: 10px 0; }
+  .viewsw button { flex: 1; }
+  .viewsw button.on { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 700; }
+  .hide { display: none !important; }
+  @media (max-width: 480px) {
+    .day .tag { font-size: 10px; padding: 1px 3px; }
+    .day { min-height: 54px; } .day .h { display: none; }
+    .shift { min-height: 66px; font-size: 11px; } .shift .code { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+<div id="app"><div class="loading">載入中…</div></div>
+<script>
+var S = { view: 'leave', rosterCache: {}, showLogin: false, mode: 'staff', me: null, data: null, cycle: null, picks: {}, saved: {}, type: '休', pw: '', admin: null, dirty: false };
+var WD = ['日', '一', '二', '三', '四', '五', '六'];
+
+var API_URL = 'https://script.google.com/macros/s/AKfycbwx2Rb3C0zIOEEwAObqTPKSbJPdC9XrFyxXQCKGZvyC7hCITx4xpqG9pd4xO1XaSFUedA/exec';
+function call(fn) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: args }) })
+    .catch(function () { throw new Error('連不上伺服器，請確認網路後再試一次'); })
+    .then(function (r) { return r.json(); })
+    .then(function (j) { if (!j || !j.ok) throw new Error((j && j.error) || '發生錯誤'); return j.data; });
+}
+function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function toast(msg, err) {
+  var t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.textContent = msg;
+  document.body.appendChild(t); setTimeout(function () { t.remove(); }, err ? 4500 : 2200);
+}
+function utc(s) { var p = s.split('-'); return Date.UTC(+p[0], +p[1] - 1, +p[2]); }
+function addD(s, n) { var d = new Date(utc(s) + n * 86400000); return d.getUTCFullYear() + '-' + ('0' + (d.getUTCMonth() + 1)).slice(-2) + '-' + ('0' + d.getUTCDate()).slice(-2); }
+function wd(s) { return new Date(utc(s)).getUTCDay(); }
+function md(s) { var p = s.split('-'); return (+p[1]) + '/' + (+p[2]); }
+function daysOf(c) { var out = []; for (var d = c.start; d <= c.end; d = addD(d, 1)) out.push(d); return out; }
+function cycleLabel(c) { return md(c.start) + '～' + md(c.end); }
+function $(id) { return document.getElementById(id); }
+function app(html) { $('app').innerHTML = html; }
+
+// ---------------- 夥伴頁 ----------------
+function isOffDay(d, person, holidays, areas) {
+  var w = wd(d);
+  if (w === 0) return '週日';
+  var area = person.store === '支援' ? '' : areas[person.store];
+  if (area === '廠區') { if (w === 6) return '週六'; if (holidays[d]) return '店休'; }
+  return '';
+}
+
+function topBar() {
+  return '<div class="topbar"><div class="wrap"><b>長庚生技｜排休</b><button id="adm" class="' + (S.pw ? 'on' : '') + '">' + (S.pw ? '主管模式・離開' : '主管') + '</button></div></div>';
+}
+function bindTop() {
+  $('adm').onclick = function () {
+    if (S.pw) { S.pw = ''; S.rosterCache = {}; toast('已離開主管模式'); renderStaff(); return; }
+    S.showLogin = !S.showLogin; renderStaff(); if ($('pw')) $('pw').focus();
+  };
+  if ($('login')) {
+    $('pw').onkeydown = function (e) { if (e.key === 'Enter') $('login').click(); };
+    $('login').onclick = function () {
+      var pw = $('pw').value; $('login').disabled = true;
+      call('apiAdminLogin', pw).then(function () { S.pw = pw; S.showLogin = false; S.rosterCache = {}; toast('已進入主管模式'); renderStaff(); })
+        .catch(function (e) { toast(e.message, true); $('login').disabled = false; });
+    };
+  }
+}
+
+function staffStart(cycleStart) {
+  app('<div class="loading">載入中…</div>');
+  call('apiInit').then(function (data) {
+    S.data = data;
+    var saved = store('pmName');
+    S.me = data.people.filter(function (p) { return p.name === (S.me ? S.me.name : saved); })[0] || data.people[0];
+    if (!S.me) { app(topBar() + '<div class="wrap"><div class="card">人員表是空的，請先在試算表「人員」填名字。</div></div>'); bindTop(); return; }
+    staffCal(cycleStart);
+  }).catch(function (e) { app('<div class="wrap"><div class="card">讀取失敗：' + esc(e.message) + '</div></div>'); });
+}
+
+function staffCal(cycleStart) {
+  var cs = S.data.cycles;
+  if (!cs.length) { app(topBar() + '<div class="wrap"><div class="card">目前沒有可填寫的期別。</div></div>'); bindTop(); return; }
+  var c = cs.filter(function (x) { return x.start === cycleStart; })[0] || cs.filter(function (x) { return !x.locked; })[0] || cs[0];
+  S.cycle = c;
+  call('apiCycleLeaves', c.start).then(function (list) {
+    S.picks = {}; S.others = {}; S.allLeaves = list;
+    list.forEach(function (x) {
+      if (x.name === S.me.name) S.picks[x.date] = x.type;
+      else (S.others[x.date] = S.others[x.date] || []).push(x);
+    });
+    S.saved = JSON.parse(JSON.stringify(S.picks)); S.dirty = false;
+    renderStaff();
+  }).catch(function (e) { toast(e.message, true); });
+}
+
+function canEdit() { return !S.cycle.locked || !!S.pw; }
+
+function renderStaff() {
+  var c = S.cycle, me = S.me, data = S.data, edit = canEdit();
+  var h = topBar() + '<div class="wrap">';
+  if (S.showLogin && !S.pw) h += '<div class="card"><b>主管密碼</b><input type="password" id="pw" autocomplete="current-password"><button class="primary" id="login">進入主管模式</button></div>';
+  if (S.pw) {
+    h += '<div class="adminbar"><div class="row" style="justify-content:space-between"><span>本期夥伴填寫：</span><div class="seg">';
+    [['自動', '自動（' + md(c.deadline) + ' 截止）'], ['鎖定', '鎖定'], ['開放', '開放']].forEach(function (m) {
+      h += '<button data-m="' + m[0] + '" class="' + (c.mode === m[0] ? 'on' : '') + '">' + m[1] + '</button>';
+    });
+    h += '</div></div><div class="row" style="margin-top:10px;justify-content:space-between"><span style="font-size:13px">' + (c.lastRun ? '最後排班：' + esc(c.lastRun) : '這一期還沒排') + '</span>' +
+      '<button class="primary" id="gen">' + (c.lastRun ? '重新產生班表' : '產生班表') + '</button></div></div>';
+  }
+  h += '<div class="who-row">';
+  data.people.forEach(function (p, i) {
+    h += '<button class="who-btn' + (p.name === me.name ? ' on' : '') + '" data-i="' + i + '">' + esc(p.name) + '</button>';
+  });
+  h += '</div><div class="tabs">';
+  data.cycles.forEach(function (x) {
+    h += '<button data-s="' + x.start + '" class="' + (x.start === c.start ? 'on' : '') + '">' + cycleLabel(x) + (x.locked ? '（已截止）' : '') + '</button>';
+  });
+  h += '</div><div class="viewsw"><button data-v="leave" class="' + (S.view !== 'roster' ? 'on' : '') + '">排休</button><button data-v="roster" class="' + (S.view === 'roster' ? 'on' : '') + '">看班表</button></div>';
+  if (S.view === 'roster') { h += '<div id="rosterBox"><div class="loading">讀取班表…</div></div></div>'; app(h); bindCommon(); loadRoster(); return; }
+  h += c.locked
+    ? (S.pw ? '<div class="status closed">這一期已截止。你在主管模式，仍然可以修改。</div>' : '<div class="status closed">這一期已截止，只能看、不能修改。要改請找主管。</div>')
+    : '<div class="status open"><b>' + esc(me.name) + '</b> 的休假，<b>' + md(c.deadline) + '</b> 截止。點日期就能選，記得按下方「儲存」。</div>';
+  h += '<div class="card">';
+  if (edit) {
+    h += '<div class="picker">';
+    ['休', '特休', '換休'].forEach(function (t) { h += '<button data-t="' + t + '" class="' + (S.type === t ? 'on' : '') + '">' + t + '</button>'; });
+    h += '</div>';
+  }
+  h += '<div class="cal">';
+  ['一', '二', '三', '四', '五', '六', '日'].forEach(function (w) { h += '<div class="wd">' + w + '</div>'; });
+  var lastM = '';
+  daysOf(c).forEach(function (d) {
+    var off = isOffDay(d, me, data.holidays, data.areas);
+    var hol = data.holidays[d];
+    var t = S.picks[d];
+    var oth = (S.others || {})[d] || [];
+    var m = d.slice(0, 7) !== lastM ? (+d.slice(5, 7)) + '月' : '';
+    lastM = d.slice(0, 7);
+    var cls = 'day' + (off ? ' off' : '') + (hol ? ' hol' : '') + (t ? ' sel-' + t : '') + (!off && edit ? ' click' : '') + (oth.length ? ' busy' : '');
+    h += '<div class="' + cls + '" data-d="' + d + '"><span class="m">' + m + '</span><span class="n">' + (+d.slice(8)) + '</span>' +
+      (hol ? '<span class="h">' + esc(hol) + '</span>' : '') +
+      (t ? '<span class="tag ' + t + '">' + t + '</span>' : (off && !oth.length ? '<span class="h" style="color:#a9a39a">' + off + '</span>' : '')) +
+      (oth.length ? '<span class="oth">' + oth.slice(0, 2).map(function (x) { return '<i>' + esc(shortName(x)) + '</i>'; }).join('') + (oth.length > 2 ? '<i>+' + (oth.length - 2) + '</i>' : '') + '</span>' : '') + '</div>';
+  });
+  h += '</div><div class="legend"><span><i style="background:var(--off)"></i>不用排休（週日或店休）</span><span><i style="background:var(--hol)"></i>國定假日</span><span><i style="background:#eef3ef;border:1px solid #9fbfae"></i>小字＝其他人那天休假</span></div></div>';
+  h += renderEveryone() + '</div>';
+  if (edit) h += '<div class="bar"><div class="wrap"><div class="sum" id="sum"></div><button class="primary" id="save">儲存</button></div></div>';
+  app(h);
+  bindCommon();
+  Array.prototype.forEach.call(document.querySelectorAll('[data-pi]'), function (b) {
+    b.onclick = function () { switchPerson(S.data.people[+b.getAttribute('data-pi')]); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.picker button'), function (b) {
+    b.onclick = function () { S.type = b.getAttribute('data-t'); renderStaff(); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.day.click'), function (el) {
+    el.onclick = function () {
+      var d = el.getAttribute('data-d');
+      if (S.picks[d] === S.type) delete S.picks[d];
+      else {
+        S.picks[d] = S.type;
+        var oth = (S.others || {})[d] || [];
+        if (oth.length) toast(md(d) + ' ' + oth.map(function (x) { return x.name; }).join('、') + ' 也休假，宜仙一天只能支援一家店', true);
+      }
+      S.dirty = JSON.stringify(sortObj(S.picks)) !== JSON.stringify(sortObj(S.saved));
+      renderStaff();
+    };
+  });
+  if ($('save')) { $('save').onclick = staffSave; updateSum(); }
+}
+
+function bindCommon() {
+  var c = S.cycle;
+  bindTop();
+  Array.prototype.forEach.call(document.querySelectorAll('.who-btn'), function (b) {
+    b.onclick = function () { switchPerson(S.data.people[+b.getAttribute('data-i')]); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (b) {
+    b.onclick = function () { if (S.dirty && !confirm('還沒儲存，確定要切換？')) return; staffCal(b.getAttribute('data-s')); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.viewsw button'), function (b) {
+    b.onclick = function () {
+      var v = b.getAttribute('data-v'); if (v === S.view || (v === 'leave' && S.view !== 'roster')) return;
+      if (S.dirty && !confirm('休假還沒儲存，確定要切換？')) return;
+      if (S.dirty) { S.picks = JSON.parse(JSON.stringify(S.saved)); S.dirty = false; }
+      S.view = v; renderStaff();
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.adminbar .seg button'), function (b) {
+    b.onclick = function () {
+      var m = b.getAttribute('data-m'); if (m === c.mode) return;
+      call('apiAdminSetLock', S.pw, c.start, m).then(function () { toast('已改為「' + m + '」'); staffStart(c.start); }).catch(function (e) { toast(e.message, true); });
+    };
+  });
+  if ($('gen')) $('gen').onclick = function () {
+    if (S.dirty && !confirm('休假還沒儲存，排班會用「已儲存」的資料。要繼續嗎？')) return;
+    $('gen').disabled = true; $('gen').textContent = '排班中…';
+    call('apiAdminGenerate', S.pw, c.start).then(function (nd) {
+      S.rosterCache[c.start] = nd; S.view = 'roster';
+      S.data.cycles.forEach(function (x) { if (x.start === nd.cycle.start) x.lastRun = nd.cycle.lastRun; });
+      S.cycle = nd.cycle; toast('班表產生好了'); renderStaff();
+    }).catch(function (e) { toast(e.message, true); $('gen').disabled = false; $('gen').textContent = '產生班表'; });
+  };
+}
+
+function loadRoster() {
+  var c = S.cycle;
+  var show = function (d) {
+    var h = '<div class="card"><h2 style="margin:0 0 4px">宜仙班表　' + cycleLabel(c) + '</h2>';
+    if (!d.roster.length) { $('rosterBox').innerHTML = h + '<p class="muted">這一期的班表還沒產生。' + (S.pw ? '按上方「產生班表」。' : '主管排好後就會出現在這裡。') + '</p></div>'; return; }
+    h += '<p class="muted" style="margin:0 0 8px">' + (c.lastRun ? '最後排班：' + esc(c.lastRun) : '') + '</p>' + renderRoster(d) + '</div>';
+    if (S.pw) h += renderStats(d) + (d.issues ? renderIssues(d) : '');
+    $('rosterBox').innerHTML = h;
+  };
+  if (S.rosterCache[c.start]) { show(S.rosterCache[c.start]); return; }
+  var p = S.pw ? call('apiAdminCycle', S.pw, c.start) : call('apiCycleRoster', c.start);
+  p.then(function (d) { S.rosterCache[c.start] = d; if (S.view === 'roster' && S.cycle.start === c.start) show(d); })
+    .catch(function (e) { $('rosterBox').innerHTML = '<div class="card">讀取失敗：' + esc(e.message) + '</div>'; });
+}
+
+function switchPerson(p) {
+  if (!p || p.name === S.me.name) return;
+  if (S.dirty && !confirm(S.me.name + ' 的休假還沒儲存，確定要切換？')) return;
+  S.me = p; store('pmName', p.name); S.dirty = false;
+  if (S.view === 'roster') { S.view = 'leave'; }
+  staffCal(S.cycle.start);
+}
+
+function shortName(x) { var n = String(x.name || ''); return n.length > 2 ? n.slice(0, 2) : n; }
+function renderEveryone() {
+  var by = {}, order = [];
+  (S.data.people || []).forEach(function (p) { by[p.name] = []; order.push(p.name); });
+  (S.allLeaves || []).forEach(function (x) { if (x.name !== S.me.name) { if (!by[x.name]) { by[x.name] = []; order.push(x.name); } by[x.name].push(x); } });
+  Object.keys(S.picks).forEach(function (d) { by[S.me.name].push({ date: d, type: S.picks[d] }); });
+  var h = '<div class="card"><h2>這一期大家的休假</h2><p class="muted" style="margin:0 0 8px">點名字就能切換到那個人排休。同一天有兩家店休假，宜仙只能支援一家，請盡量錯開。</p><ul class="issues">';
+  order.forEach(function (n) {
+    var list = (by[n] || []).slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    var p = S.data.people.filter(function (q) { return q.name === n; })[0];
+    var pi = S.data.people.indexOf(p);
+    h += '<li' + (pi >= 0 && n !== S.me.name ? ' data-pi="' + pi + '" style="cursor:pointer"' : '') + '><span style="flex:none;min-width:84px;font-weight:700">' + esc(n) + (n === S.me.name ? '（目前）' : '<span style="font-weight:500;color:var(--accent-ink);font-size:12px"> ›</span>') + '<div class="muted" style="font-size:11px;font-weight:500">' + (p ? (p.store === '支援' ? '支援' : esc(p.store)) : '') + '</div></span><span>' +
+      (list.length ? list.map(function (x) {
+        var clash = n !== S.me.name ? !!S.picks[x.date] : ((S.others || {})[x.date] || []).length > 0;
+        return '<span style="display:inline-block;margin:0 6px 4px 0;' + (clash ? 'color:var(--err);font-weight:700' : '') + '">' + md(x.date) + (x.type !== '休' ? x.type : '') + '</span>';
+      }).join('') : '<span class="muted">還沒填</span>') + '</span></li>';
+  });
+  return h + '</ul></div>';
+}
+function sortObj(o) { var r = {}; Object.keys(o).sort().forEach(function (k) { r[k] = o[k]; }); return r; }
+function updateSum() {
+  var n = { '休': 0, '特休': 0, '換休': 0 }, tot = 0;
+  Object.keys(S.picks).forEach(function (d) { n[S.picks[d]]++; tot++; });
+  var parts = []; ['休', '特休', '換休'].forEach(function (t) { if (n[t]) parts.push(t + ' ' + n[t]); });
+  $('sum').innerHTML = '已選 <b>' + tot + '</b> 天' + (parts.length ? '（' + parts.join('、') + '）' : '') + (S.dirty ? '<br><span style="color:var(--warn)">尚未儲存</span>' : '<br><span class="muted">已儲存</span>');
+  $('save').disabled = !S.dirty;
+}
+function staffSave() {
+  var list = Object.keys(S.picks).map(function (d) { return { date: d, type: S.picks[d] }; });
+  $('save').disabled = true; $('save').textContent = '儲存中…';
+  (S.pw ? call('apiAdminSavePerson', S.pw, S.me.name, S.cycle.start, list) : call('apiSaveMyLeaves', S.me.name, S.cycle.start, list)).then(function () {
+    delete S.rosterCache[S.cycle.start];
+    S.allLeaves = S.allLeaves.filter(function (x) { return x.name !== S.me.name; }).concat(list.map(function (x) { return { date: x.date, name: S.me.name, type: x.type }; }));
+    S.saved = JSON.parse(JSON.stringify(S.picks)); S.dirty = false; toast('已儲存'); renderStaff();
+  }).catch(function (e) { toast(e.message, true); $('save').disabled = false; $('save').textContent = '儲存'; });
+}
+window.addEventListener('beforeunload', function (e) { if (S.dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+function renderRoster(d) {
+  var by = {}; d.roster.forEach(function (r) { by[r.date] = r; });
+  var days = daysOf(d.cycle), h = '<div class="week">';
+  ['一', '二', '三', '四', '五', '六', '日'].forEach(function (w) { h += '<div class="wd" style="text-align:center;font-size:12px;color:var(--muted)">' + w + '</div>'; });
+  h += '</div>';
+  for (var i = 0; i < days.length; i += 7) {
+    h += '<div class="week">';
+    days.slice(i, i + 7).forEach(function (x) {
+      var r = by[x] || { shift: '', store: '' };
+      var sh = d.shifts[r.shift];
+      var cls = r.shift === 'FB' ? ' off' : r.shift === 'TV' ? ' tv' : r.shift === '待定' ? ' pend' : (' blk ' + esc(r.store) + (r.pair ? ' pairc' : ''));
+      var tip = r.shift === 'FB' ? '休假' : r.shift === 'TV' ? '換休／特休' : r.shift === '待定' ? '待定，需手動安排' : (r.store + (r.pair ? ' 共班 ' : ' 單獨 ') + r.shift + (sh && sh.from ? ' ' + sh.from + '-' + sh.to : ''));
+      var hol = d.holidays[x];
+      h += '<div class="shift' + cls + '" title="' + esc(tip) + '" onclick="toast(md(\'' + x + '\') + \'　\' + this.title)"><div class="d">' + md(x) + (hol ? ' <span style="color:var(--hol-ink)">假</span>' : '') + '</div>';
+      if (r.shift === 'FB') h += '<div class="code">休</div>';
+      else if (r.shift === 'TV') h += '<div class="code">TV</div><div class="st">' + esc(r.store || '換休') + '</div>';
+      else if (r.shift === '待定') h += '<div class="code" style="font-size:14px;margin-top:6px">待定</div>';
+      else {
+        h += '<div class="big">' + esc(r.store) + '</div><div class="sm">' + (r.pair ? '共班' : '單獨') + '</div>';
+      }
+      h += '</div>';
+    });
+    h += '</div>';
+  }
+  h += '<div class="legend"><span><i class="sw" style="background:#6a5acd"></i>麥寮</span><span><i class="sw" style="background:#1f8f84"></i>新港</span><span><i class="sw" style="background:#c4527a"></i>斗六</span><span><i class="sw" style="background:#3d74b8"></i>嘉義</span></div>' +
+    '<div class="legend"><span>深色＝宜仙單獨顧店</span><span>淺色＋框＝和門市夥伴共班</span><span><i style="background:var(--off)"></i>休假</span><span><i style="background:#fff5d6"></i>待定</span><span>點格子可看班別和時間</span></div>';
+  return h;
+}
+
+function renderStats(d) {
+  var h = '<div class="card"><h2>每月支援統計</h2><p class="muted" style="margin:0 0 8px">整個月合計（含其他期已排的日子）</p>';
+  d.stats.forEach(function (st) {
+    h += '<h3 style="font-size:14px;margin:14px 0 4px">' + (+st.month.slice(5)) + ' 月</h3><table class="stats"><tr><th>店點</th><th>配額</th><th>已排</th><th>單獨</th><th>共班</th><th>支援時數</th></tr>';
+    var tq = 0, td = 0, th = 0;
+    d.stores.forEach(function (s) {
+      var x = st.stores[s.name]; tq += x.quota; td += x.days; th += x.hours;
+      h += '<tr><td>' + esc(s.name) + '</td><td>' + x.quota + '</td><td class="' + (x.days !== x.quota ? 'bad' : '') + '">' + x.days + '</td><td>' + x.solo + '</td><td>' + x.pair + '</td><td>' + x.hours + '</td></tr>';
+    });
+    h += '<tr class="total"><td>合計</td><td>' + tq + '</td><td>' + td + '</td><td></td><td></td><td>' + th + '</td></tr></table>';
+  });
+  if (d.hours) h += '<p class="muted" style="margin-top:12px">本期八週：休假 ' + d.hours.offs + ' 天，正常工時 ' + d.hours.normal + ' 小時，每日超過 8 小時的部分共 ' + d.hours.over + ' 小時。</p>';
+  return h + '</div>';
+}
+
+function renderIssues(d) {
+  var list = (d.issues || []).filter(function (i) { return i.level !== '提醒'; });
+  var h = '<div class="card"><h2>檢查結果</h2>';
+  if (!list.length) return h + '<p style="color:var(--ok);margin:0">規則全部通過，沒有需要處理的地方。</p></div>';
+  h += '<ul class="issues">';
+  list.forEach(function (i) { h += '<li><span class="lv ' + esc(i.level) + '">' + esc(i.level) + '</span><span>' + esc(i.date && i.date.length === 10 ? md(i.date) + '　' : '') + esc(i.msg) + '</span></li>'; });
+  return h + '</ul></div>';
+}
+
+// ---------------- 啟動 ----------------
+(function boot() {
+  function go(params) { if (params && (params.admin === '1' || params.admin === 'true')) S.showLogin = true; staffStart(); }
+  try {
+    if (window.google && google.script && google.script.url) { google.script.url.getLocation(function (loc) { go(loc.parameter || {}); }); return; }
+  } catch (e) {}
+  var q = {}; location.search.replace(/^\?/, '').split('&').forEach(function (kv) { var p = kv.split('='); if (p[0]) q[p[0]] = p[1]; });
+  go(q);
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+</script>
+</body>
+</html>
